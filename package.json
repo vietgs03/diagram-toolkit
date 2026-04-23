@@ -1,0 +1,50 @@
+{
+	"name": "@viethx/diagram-toolkit",
+	"version": "0.1.0",
+	"description": "Opinionated Mermaid upgrade — BBG-style component taxonomy, build-time icon inlining, semantic motion, click-to-expand lightbox with zoom + auto-generated legend, and a rule validator.",
+	"license": "MIT",
+	"author": "viethx",
+	"homepage": "https://github.com/vietgs03/diagram-toolkit#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/vietgs03/diagram-toolkit.git"
+	},
+	"bugs": {
+		"url": "https://github.com/vietgs03/diagram-toolkit/issues"
+	},
+	"keywords": ["mermaid", "astro", "diagram", "system-design", "remark", "bytebytego"],
+	"type": "module",
+	"files": ["src", "README.md", "DIAGRAM_LAYOUT.md", "LICENSE"],
+	"exports": {
+		".": "./src/index.ts",
+		"./presets": "./src/presets.ts",
+		"./remark": "./src/remark/figure.ts",
+		"./remark/inline-icons": "./src/remark/inline-icons.ts",
+		"./remark/auto-classdefs": "./src/remark/auto-classdefs.ts",
+		"./remark/validator": "./src/remark/validator.ts",
+		"./runtime": "./src/runtime/index.ts",
+		"./styles.css": "./src/styles.css"
+	},
+	"scripts": {
+		"type-check": "tsc --noEmit",
+		"format": "biome format --write ./src",
+		"lint": "biome check --write ./src"
+	},
+	"dependencies": {
+		"unist-util-visit": "^5.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.2.5",
+		"@types/mdast": "^4.0.4",
+		"@types/unist": "^3.0.2",
+		"typescript": "^5.9.3",
+		"unified": "^11.0.5"
+	},
+	"peerDependencies": {
+		"mermaid": "^11.0.0"
+	},
+	"peerDependenciesMeta": {
+		"mermaid": { "optional": true }
+	},
+	"packageManager": "pnpm@9.14.4"
+}

@@ -1,0 +1,1009 @@
+/* =============================================================
+ * Diagram toolkit — styles
+ *
+ * All selectors are scoped to `pre.mermaid` (astro-mermaid's root) or
+ * `.diagram-figure` (toolkit's figure wrapper). Nothing here leaks.
+ *
+ * Loaded automatically by `initDiagramRuntime()` via a side-effect
+ * import; also available as a standalone entry at
+ *   `@viethx/diagram-toolkit/styles.css`
+ * for consumers that only want the CSS.
+ * ============================================================= */
+
+/* ---------- Layout stability ---------- */
+pre.mermaid {
+    min-height: 12rem;               /* reserve vertical space → no layout shift */
+    max-width: 100%;
+    overflow: visible;                /* don't clip rendered SVG */
+    background: transparent !important;
+    border: none !important;
+    padding: 0.5rem !important;
+    margin: 2rem auto !important;
+    /* NOTE: do NOT use `display: flex` here — flex-shrink compresses tall SVGs
+       (stacked flowcharts) down to the 12rem floor, clipping the last nodes.
+       `display: block` + centered svg keeps intrinsic height. */
+    display: block;
+    text-align: center;
+    position: relative;
+    height: auto;
+}
+
+/* ---------- Loading skeleton (pre-render) ----------
+ * Replaces the old "rendering diagram..." text with a shimmer bar that
+ * looks like part of the design, not a console readout. */
+pre.mermaid:not([data-processed="true"]) {
+    color: transparent;
+    text-shadow: none;
+    user-select: none;
+}
+pre.mermaid:not([data-processed="true"])::before {
+    content: "";
+    position: absolute;
+    inset: 0.5rem;
+    border-radius: 0.75rem;
+    background:
+        linear-gradient(
+            90deg,
+            oklch(0.96 0.015 var(--hue, 210)) 0%,
+            oklch(0.99 0.03  var(--hue, 210)) 50%,
+            oklch(0.96 0.015 var(--hue, 210)) 100%
+        );
+    background-size: 200% 100%;
+    animation: diagram-skeleton-shimmer 1.8s ease-in-out infinite;
+}
+@keyframes diagram-skeleton-shimmer {
+    0%   { background-position:  200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ---------- Post-render fade ---------- */
+pre.mermaid[data-processed="true"] svg {
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+    animation: diagram-fade-in 0.4s ease-out;
+}
+pre.mermaid[data-processed="true"] {
+    padding: 0.5rem 1rem !important;
+}
+@keyframes diagram-fade-in {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- Flow-dot overlay ----------
+ * Dashed clone paths laid on top of each solid edge. The JS runtime adds
+ * `.diagram-flow-dot` per edge; `.reverse` variant for arrows whose head is
+ * at the path's start. Dash period = 66 (= 6 dot + 60 gap). */
+pre.mermaid[data-processed="true"] svg .diagram-flow-dot {
+    stroke: oklch(0.55 0.18 var(--hue, 210));
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 6 60;
+    fill: none;
+    pointer-events: none;
+    filter: drop-shadow(0 0 4px oklch(0.65 0.18 var(--hue, 210)));
+    animation: diagram-flow-forward 2s linear infinite;
+}
+pre.mermaid[data-processed="true"] svg .diagram-flow-dot.reverse {
+    animation-name: diagram-flow-reverse;
+}
+@keyframes diagram-flow-forward {
+    from { stroke-dashoffset: 0; }
+    to   { stroke-dashoffset: -66; }
+}
+@keyframes diagram-flow-reverse {
+    from { stroke-dashoffset: -66; }
+    to   { stroke-dashoffset: 0; }
+}
+
+/* ---------- Draw-once mode ----------
+ * Opt-in: wrap the diagram in <div class="diagram-draw-once">. First render
+ * draws each edge from start to end; good for hero diagrams. */
+.diagram-draw-once pre.mermaid[data-processed="true"] svg .edgePath path,
+.diagram-draw-once pre.mermaid[data-processed="true"] svg .flowchart-link,
+.diagram-draw-once pre.mermaid[data-processed="true"] svg .messageLine0,
+.diagram-draw-once pre.mermaid[data-processed="true"] svg .messageLine1,
+.diagram-draw-once pre.mermaid[data-processed="true"] svg .transition,
+.diagram-draw-once pre.mermaid[data-processed="true"] svg g.edge > path {
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+    animation: diagram-draw-once 1.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+@keyframes diagram-draw-once {
+    to { stroke-dashoffset: 0; }
+}
+.diagram-draw-once pre.mermaid[data-processed="true"] svg g.edge:nth-of-type(2) > path { animation-delay: 0.25s; }
+.diagram-draw-once pre.mermaid[data-processed="true"] svg g.edge:nth-of-type(3) > path { animation-delay: 0.50s; }
+.diagram-draw-once pre.mermaid[data-processed="true"] svg g.edge:nth-of-type(4) > path { animation-delay: 0.75s; }
+.diagram-draw-once pre.mermaid[data-processed="true"] svg g.edge:nth-of-type(5) > path { animation-delay: 1.00s; }
+.diagram-draw-once pre.mermaid[data-processed="true"] svg g.edge:nth-of-type(6) > path { animation-delay: 1.25s; }
+.diagram-draw-once pre.mermaid[data-processed="true"] svg g.edge:nth-of-type(7) > path { animation-delay: 1.50s; }
+
+/* ---------- Static mode (print / captures) ---------- */
+pre.mermaid[data-static="true"] svg *,
+.diagram-figure[data-static="true"] pre.mermaid svg * {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    stroke-dasharray: none !important;
+}
+
+/* ---------- Figure + caption wrapper ----------
+ * Emitted by remarkDiagramFigure when a fence has `{caption="..."}` meta.
+ * Overrides Tailwind Typography's figure/figcaption defaults. */
+figure.diagram-figure,
+.prose figure.diagram-figure {
+    margin: 2rem auto;
+    padding: 0;
+    max-width: 100%;
+}
+figure.diagram-figure > pre.mermaid {
+    margin: 0 auto !important;
+}
+figure.diagram-figure > figcaption.diagram-caption,
+.prose figure.diagram-figure > figcaption.diagram-caption {
+    margin-top: 0.5rem;
+    text-align: center;
+    color: oklch(0.45 0.03 var(--hue, 210));
+    font-size: 0.875rem;
+    font-style: italic;
+    line-height: 1.5;
+}
+
+/* =============================================================
+ * BBG look pack — opt-in via fence meta `{look="bbg"}`. Emits
+ * `data-look="bbg"` on the figure wrapper (see remarkDiagramFigure).
+ *
+ * Goal: ByteByteGo editorial style — flat white nodes, thin neutral
+ * borders, dashed clusters with colored title pills, crisp thin
+ * arrows, soft cream figure background. NO drop shadows (the
+ * reference look is layered + flat, not floating).
+ *
+ * Pairs best with Mermaid's `look: "neo"` per-diagram config.
+ * ============================================================= */
+
+/* ---- Figure chrome ---- */
+figure.diagram-figure[data-look="bbg"] {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 1.75rem 1.5rem 1.25rem;
+    box-shadow: none;
+}
+figure.diagram-figure[data-look="bbg"] > pre.mermaid {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    min-height: 0 !important;
+}
+figure.diagram-figure[data-look="bbg"] > .diagram-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.35rem 0;
+    text-align: left;
+}
+figure.diagram-figure[data-look="bbg"] > figcaption.diagram-caption {
+    margin-top: 1rem;
+    color: #64748b;
+    font-style: normal;
+    font-size: 0.85rem;
+    font-weight: 400;
+    text-align: left;
+    line-height: 1.5;
+    border-top: 1px dashed #e5e7eb;
+    padding-top: 0.75rem;
+}
+figure.diagram-figure[data-look="bbg"] > .diagram-title + pre.mermaid {
+    margin-top: 1rem !important;
+}
+
+/* =============================================================
+ * BBG motion system (R12) — semantic, never decorative.
+ *
+ *  solid edge `-->` →  bead flow, slow+subtle, neutral blue
+ *  dashed `-.->`    →  shimmer (opacity pulse), no bead — async/telemetry
+ *  thick  `==>`     →  bigger + faster bead — hot path
+ *  .highlight node  →  breathing glow — post's focal subject
+ *
+ *  ≤ 2 motion types per diagram (rule of thumb). Reduced-motion kills all.
+ * ============================================================= */
+
+/* Bead on solid edges — tamer than the default mode (slower, smaller) */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .diagram-flow-dot {
+    stroke: #3b82f6 !important;
+    stroke-width: 3 !important;
+    stroke-dasharray: 4 50 !important;
+    filter: drop-shadow(0 0 3px rgba(59, 130, 246, 0.6)) !important;
+    animation-duration: 3s !important;
+    opacity: 0.85;
+}
+/* Dashed edges get shimmer instead of bead — hide clone */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .diagram-flow-dot.dashed {
+    display: none !important;
+}
+/* Thick edges → bigger + faster bead */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .diagram-flow-dot.thick {
+    stroke-width: 5 !important;
+    stroke-dasharray: 6 40 !important;
+    animation-duration: 1.4s !important;
+}
+
+/* Shimmer on dashed edges themselves (opacity pulse) */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg path.flowchart-link.edge-pattern-dotted,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg path.flowchart-link.edge-pattern-dashed,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgePath path.edge-pattern-dotted,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgePath path.edge-pattern-dashed {
+    animation: diagram-shimmer-async 2.8s ease-in-out infinite;
+}
+@keyframes diagram-shimmer-async {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 1; }
+}
+
+/* Focal node breathing glow (R9 + R12) — one per diagram */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.node.highlight > rect,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.node.highlight > polygon,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.node.highlight > .label-container {
+    animation: diagram-focal-breathe 3.6s ease-in-out infinite;
+}
+@keyframes diagram-focal-breathe {
+    0%, 100% {
+        filter: drop-shadow(0 0 0 rgba(124, 58, 237, 0));
+        stroke-width: 1.5;
+    }
+    50% {
+        filter: drop-shadow(0 0 10px rgba(124, 58, 237, 0.45));
+        stroke-width: 2;
+    }
+}
+
+/* ---- Flat nodes: white fill, thin gray border, no shadow ---- */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node rect,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node polygon,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node circle,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node ellipse,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node path,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node .label-container {
+    fill: #ffffff !important;
+    stroke: #cbd0d7 !important;
+    stroke-width: 1 !important;
+    filter: none !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node rect,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node .label-container {
+    rx: 8;
+    ry: 8;
+}
+/* Preserve explicit `highlight` classDef for the one focal node per diagram */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.highlight rect,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.highlight polygon,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.highlight .label-container {
+    fill: #f3ebff !important;
+    stroke: #7c3aed !important;
+    stroke-width: 1.5 !important;
+}
+
+/* ---- Component signatures (R13) ----
+ * Every node stays a rectangle — no cylinders, no stadiums (those break
+ * the grid with their fixed-ratio ellipses). Role is communicated by a
+ * colored border thick enough to read in peripheral vision, paired with
+ * a vendor/role icon in the label. Kept flat — no fill tint — so nodes
+ * compose into a calm editorial grid instead of a dashboard of colors.
+ *
+ * Colors mirror `COMPONENTS` in presets.ts. If you add a role there,
+ * add a selector here; biome/prettier will keep them sorted. */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.client      rect { stroke: #64748b !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.edge        rect { stroke: #3b82f6 !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.compute     rect { stroke: #7c3aed !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.database    rect { stroke: #f97316 !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.cache       rect { stroke: #10b981 !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.queue       rect { stroke: #a855f7 !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.storage     rect { stroke: #f59e0b !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.search      rect { stroke: #0ea5e9 !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.observability rect { stroke: #94a3b8 !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.external    rect {
+    stroke: #64748b !important;
+    stroke-width: 1.5 !important;
+    stroke-dasharray: 4 3 !important;
+}
+
+/* ---- Thin neutral edges ---- */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .flowchart-link,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgePath path,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.edge > path {
+    stroke: #6b7280 !important;
+    stroke-width: 1.5 !important;
+    fill: none !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg marker path,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg marker polygon {
+    fill: #6b7280 !important;
+    stroke: #6b7280 !important;
+}
+
+/* ---- Edge labels: italic gray, sit over cream BG (no chip) ---- */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgeLabel {
+    background: transparent !important;
+    filter: none !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgeLabel foreignObject > div {
+    background: #fdfbf6 !important;
+    padding: 0 6px !important;
+    color: #6b7280 !important;
+    font-style: italic !important;
+    font-size: 0.73rem !important;
+    font-weight: 400 !important;
+    border-radius: 0 !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgeLabel rect {
+    fill: #fdfbf6 !important;
+    stroke: none !important;
+}
+
+/* ---- Clusters: dashed transparent box with colored title pill ---- */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .cluster rect {
+    stroke: #b8b0a0 !important;
+    stroke-width: 1.25 !important;
+    stroke-dasharray: 6 4 !important;
+    fill: transparent !important;
+    rx: 12;
+    ry: 12;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .cluster-label foreignObject {
+    overflow: visible;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .cluster-label foreignObject > div {
+    background: #dbeafe;
+    color: #1e3a8a;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .cluster-label span.nodeLabel,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .cluster-label p {
+    color: inherit !important;
+    background: transparent !important;
+    margin: 0 !important;
+}
+
+/* ---- Per-cluster color pills ----
+   Author applies `class <subgraphId> clusterBlue|clusterPurple|clusterOrange|clusterGreen`
+   in the Mermaid source; uniform pill geometry comes from the default
+   `.cluster-label foreignObject > div` above, colors come from here. */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterBlue rect { stroke: #3b82f6 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterBlue .cluster-label foreignObject > div {
+    background: #dbeafe;
+    color: #1e40af;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterPurple rect { stroke: #a855f7 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterPurple .cluster-label foreignObject > div {
+    background: #ede9fe;
+    color: #6b21a8;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterOrange rect { stroke: #f97316 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterOrange .cluster-label foreignObject > div {
+    background: #fed7aa;
+    color: #9a3412;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterGreen rect { stroke: #10b981 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterGreen .cluster-label foreignObject > div {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* ---- Node layout (R5): icon-TOP + center-align ----
+   CRITICAL: Mermaid measures htmlLabels on a scratch DOM node that lives
+   OUTSIDE `.diagram-figure` / `svg`. Any CSS gated behind those ancestors
+   applies ONLY post-commit, long after the foreignObject's width/height
+   are frozen from the scratch measurement. If we add `padding` or
+   `max-width` to the post-commit wrapping div, the content shifts but the
+   box stays the measured size → visible overflow / uneven boxes.
+
+   So the layout concerns that affect size are handled UPSTREAM:
+     1. `<img width height style="display:block;margin:0 auto">` — emitted
+        by remarkInlineIcons; HTML attrs + inline style always apply,
+        including during scratch measurement. Reserves correct space
+        before the SVG file loads AND stacks icon above text.
+     2. Author policy R6.1 (subtitle ≤ 15 chars) keeps labels intrinsically
+        narrow — the real L3 defense.
+     3. Mermaid's own `flowchart.padding` config provides node padding
+        without post-commit CSS.
+
+   The rules below only touch properties that are layout-size-neutral
+   (color, font weight, alignment of inline content within its own
+   measured line box). ---- */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node foreignObject {
+    overflow: visible !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node foreignObject > div {
+    text-align: center !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node foreignObject > div > span.nodeLabel,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node foreignObject > div > span.nodeLabel > p {
+    display: block !important;
+    text-align: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ---- Node typography ---- */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node foreignObject span.nodeLabel {
+    color: #0f172a !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+}
+/* Optional subtitle — author wraps subtitle in `<span class="sub">...</span>` */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node foreignObject .sub {
+    display: block !important;
+    color: #6b7280 !important;
+    font-style: italic !important;
+    font-size: 0.7rem !important;
+    font-weight: 400 !important;
+    margin-top: 2px !important;
+}
+
+/* =============================================================
+ * BBG — sequenceDiagram
+ *
+ * System-design posts use sequenceDiagram for failover, retry, 2PC,
+ * cache miss paths. Without these rules the sequence renders with
+ * Mermaid's default skin next to a BBG flowchart in the same post —
+ * visually jarring. Same editorial signature: flat actor cards, thin
+ * neutral lifelines, italic gray message labels, soft cream notes.
+ * ============================================================= */
+
+/* Actor boxes — match BBG node look: flat white, thin gray border */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .actor {
+    fill: #ffffff !important;
+    stroke: #cbd0d7 !important;
+    stroke-width: 1 !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg text.actor,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .actor > tspan {
+    fill: #0f172a !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+}
+
+/* Lifeline: thin dashed slate, not the default bright blue */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg line.actor-line,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .actor-line {
+    stroke: #cbd0d7 !important;
+    stroke-width: 1 !important;
+    stroke-dasharray: 4 3 !important;
+}
+
+/* Messages: thin neutral, arrowheads matched */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .messageLine0,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .messageLine1 {
+    stroke: #6b7280 !important;
+    stroke-width: 1.25 !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg text.messageText {
+    fill: #475569 !important;
+    font-style: italic !important;
+    font-size: 0.75rem !important;
+    font-weight: 400 !important;
+}
+
+/* Activations: subtle slate, not the default loud blue */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg rect.activation0,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg rect.activation1,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg rect.activation2 {
+    fill: #f1f5f9 !important;
+    stroke: #94a3b8 !important;
+    stroke-width: 0.75 !important;
+}
+
+/* Notes: cream surface matching the figure bg, thin amber border */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .note,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg rect.note {
+    fill: #fffbeb !important;
+    stroke: #fbbf24 !important;
+    stroke-width: 1 !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg text.noteText,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .noteText > tspan {
+    fill: #78350f !important;
+    font-size: 0.75rem !important;
+}
+
+/* loop / alt / opt label boxes */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .labelBox {
+    fill: #f3ebff !important;
+    stroke: #a855f7 !important;
+    stroke-width: 1 !important;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg text.labelText,
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg text.loopText {
+    fill: #4c1d95 !important;
+    font-weight: 600 !important;
+    font-size: 0.73rem !important;
+}
+
+/* Sequence — dark mode overlay */
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .actor {
+    fill: #111827 !important;
+    stroke: #334155 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg text.actor,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .actor > tspan {
+    fill: #f1f5f9 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg line.actor-line,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .actor-line {
+    stroke: #334155 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .messageLine0,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .messageLine1 {
+    stroke: #64748b !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg text.messageText {
+    fill: #cbd5e1 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg rect.activation0,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg rect.activation1,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg rect.activation2 {
+    fill: #1e293b !important;
+    stroke: #475569 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .note,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg rect.note {
+    fill: #422006 !important;
+    stroke: #b45309 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg text.noteText,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .noteText > tspan {
+    fill: #fde68a !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .labelBox {
+    fill: #2e1065 !important;
+    stroke: #a78bfa !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg text.labelText,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg text.loopText {
+    fill: #ede9fe !important;
+}
+
+/* =============================================================
+ * BBG — dark mode overlay
+ *
+ * The blog toggles `.dark` on <html> (Tailwind convention). Without
+ * these overrides the BBG look renders with its light palette on top
+ * of a dark page background — white figure chrome, bright white
+ * nodes, dark text on dark fill. Every surface flips; role border
+ * colors stay (they carry meaning and read fine on dark).
+ *
+ * Keep dark values desaturated. Saturated colors on a dark background
+ * read as UI chrome, not editorial diagrams.
+ * ============================================================= */
+
+.dark figure.diagram-figure[data-look="bbg"] {
+    background: #0f172a;
+    border-color: #1f2937;
+}
+.dark figure.diagram-figure[data-look="bbg"] > .diagram-title {
+    color: #e2e8f0;
+}
+.dark figure.diagram-figure[data-look="bbg"] > figcaption.diagram-caption {
+    color: #94a3b8;
+    border-top-color: #1f2937;
+}
+
+/* Nodes: dark surface, muted border (role colors override below) */
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node rect,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node polygon,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node circle,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node ellipse,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node path,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node .label-container {
+    fill: #111827 !important;
+    stroke: #334155 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.highlight rect,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.highlight polygon,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.highlight .label-container {
+    fill: #2e1065 !important;
+    stroke: #a78bfa !important;
+}
+
+/* Node typography */
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node foreignObject span.nodeLabel {
+    color: #f1f5f9 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .node foreignObject .sub {
+    color: #94a3b8 !important;
+}
+
+/* Edges: visible but not loud */
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .flowchart-link,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgePath path,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.edge > path {
+    stroke: #64748b !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg marker path,
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg marker polygon {
+    fill: #64748b !important;
+    stroke: #64748b !important;
+}
+
+/* Edge labels: chip fills the dark figure bg so the stroke appears to break */
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgeLabel foreignObject > div {
+    background: #0f172a !important;
+    color: #94a3b8 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgeLabel rect {
+    fill: #0f172a !important;
+}
+
+/* Clusters: keep dashed accent but darken the title pill */
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .cluster rect {
+    stroke: #475569 !important;
+}
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterBlue .cluster-label foreignObject > div   { background: #1e3a8a; color: #dbeafe; }
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterPurple .cluster-label foreignObject > div { background: #4c1d95; color: #ede9fe; }
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterOrange .cluster-label foreignObject > div { background: #7c2d12; color: #fed7aa; }
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterGreen .cluster-label foreignObject > div  { background: #14532d; color: #d1fae5; }
+
+/* Bead tint — blue-400 reads well on dark, unlike the light-mode blue-500 */
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .diagram-flow-dot {
+    stroke: #60a5fa !important;
+    filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.55)) !important;
+}
+
+/* =============================================================
+ * Lightbox — click any diagram to expand to a near-fullscreen modal
+ *
+ * Uses the native <dialog> element so we inherit:
+ *   • ESC to close, focus trap, background inert-ing — all free
+ *   • ::backdrop pseudo-element for the dimmed background
+ *   • No stacking-context hacks (dialogs live in the top layer)
+ *
+ * Inherits the `data-look` attribute from the source figure so the
+ * BBG (or future) look pack applies its node / edge styling inside
+ * the modal the same way it does inline.
+ * ============================================================= */
+
+figure.diagram-figure {
+    cursor: zoom-in;
+}
+figure.diagram-figure[data-no-lightbox] {
+    cursor: default;
+}
+
+dialog.diagram-lightbox {
+    width: min(96vw, 1500px);
+    height: 94vh;
+    max-width: 96vw;
+    max-height: 96vh;
+    padding: 1.5rem 1.75rem 1.25rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    background: #fdfbf6;
+    color: #0f172a;
+    box-shadow: 0 24px 64px rgba(15, 23, 42, 0.28);
+    overflow: hidden;
+    cursor: default;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.diagram-lightbox-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    gap: 1rem;
+}
+.diagram-lightbox-main {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+dialog.diagram-lightbox::backdrop {
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+}
+dialog.diagram-lightbox[open] {
+    animation: diagram-lightbox-enter 180ms ease-out;
+}
+@keyframes diagram-lightbox-enter {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+.diagram-lightbox-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.85rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #475569;
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 140ms ease, border-color 140ms ease;
+}
+.diagram-lightbox-close:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.diagram-lightbox-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    padding-right: 3rem; /* leave room for close button */
+}
+.diagram-lightbox-title[hidden] { display: none; }
+
+.diagram-lightbox-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+    border-radius: 8px;
+    background: transparent;
+}
+.diagram-lightbox-stage.is-dragging { cursor: grabbing; }
+.diagram-lightbox-stage svg {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    transition: transform 0s;
+    will-change: transform;
+}
+
+/* ---- Zoom controls ---- */
+.diagram-lightbox-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+}
+.diagram-lightbox-controls button {
+    height: 28px;
+    min-width: 32px;
+    padding: 0 0.6rem;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    color: #475569;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+}
+.diagram-lightbox-controls button:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+.diagram-lightbox-controls button.diagram-lightbox-zoom-label {
+    min-width: 52px;
+    font-variant-numeric: tabular-nums;
+    color: #0f172a;
+}
+.diagram-lightbox-hint {
+    margin-left: auto;
+    color: #94a3b8;
+    font-size: 0.72rem;
+    font-style: italic;
+}
+
+/* ---- Legend sidebar ---- */
+.diagram-lightbox-legend {
+    flex: 0 0 240px;
+    padding: 0.75rem 0.9rem 0.9rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    overflow-y: auto;
+    font-size: 0.8rem;
+}
+.diagram-lightbox-legend[hidden] { display: none; }
+.diagram-lightbox-legend h4 {
+    margin: 0 0 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #64748b;
+}
+.diagram-lightbox-legend ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.diagram-lightbox-legend li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+}
+.diagram-lightbox-legend-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+}
+.diagram-lightbox-legend-text strong {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #0f172a;
+}
+.diagram-lightbox-legend-text small {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-style: italic;
+}
+
+/* Swatches — visual shorthand for each legend kind */
+.diagram-lightbox-swatch {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    margin-top: 1px;
+    border-radius: 4px;
+    background: #ffffff;
+    border: 2px solid #cbd0d7;
+    position: relative;
+}
+.diagram-lightbox-swatch-focal {
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.45);
+    border-width: 2px;
+    background: #f3ebff;
+}
+.diagram-lightbox-swatch-edge-solid,
+.diagram-lightbox-swatch-edge-dashed,
+.diagram-lightbox-swatch-edge-thick {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    height: 24px;
+}
+.diagram-lightbox-swatch-edge-solid::after,
+.diagram-lightbox-swatch-edge-dashed::after,
+.diagram-lightbox-swatch-edge-thick::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 50%;
+    border-top: 1.5px solid #6b7280;
+}
+.diagram-lightbox-swatch-edge-dashed::after {
+    border-top-style: dashed;
+}
+.diagram-lightbox-swatch-edge-thick::after {
+    border-top-width: 3.5px;
+    border-top-color: #3b82f6;
+}
+/* Neutralize outer-page `pre.mermaid` chrome when it's used purely as a
+   styling hook inside the lightbox stage (margins, min-height, the
+   loading-skeleton background). The wrapper's only job here is to make
+   existing `[data-look] pre.mermaid[data-processed] svg …` selectors
+   match. */
+.diagram-lightbox-stage pre.mermaid {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+.diagram-lightbox-stage pre.mermaid::before {
+    content: none !important; /* kill skeleton shimmer inside the modal */
+}
+
+.diagram-lightbox-caption {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: #64748b;
+    line-height: 1.5;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #e5e7eb;
+}
+.diagram-lightbox-caption[hidden] { display: none; }
+
+/* Dark mode */
+.dark dialog.diagram-lightbox {
+    background: #0f172a;
+    color: #f1f5f9;
+    border-color: #1f2937;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+.dark dialog.diagram-lightbox::backdrop {
+    background: rgba(0, 0, 0, 0.72);
+}
+.dark .diagram-lightbox-close {
+    background: #1f2937;
+    border-color: #374151;
+    color: #e2e8f0;
+}
+.dark .diagram-lightbox-close:hover {
+    background: #334155;
+    border-color: #475569;
+}
+.dark .diagram-lightbox-caption {
+    color: #94a3b8;
+    border-top-color: #1f2937;
+}
+
+/* Zoom controls — dark */
+.dark .diagram-lightbox-controls button {
+    background: #1f2937;
+    border-color: #374151;
+    color: #cbd5e1;
+}
+.dark .diagram-lightbox-controls button:hover {
+    background: #334155;
+    border-color: #475569;
+}
+.dark .diagram-lightbox-controls button.diagram-lightbox-zoom-label { color: #f1f5f9; }
+.dark .diagram-lightbox-hint { color: #64748b; }
+
+/* Legend — dark */
+.dark .diagram-lightbox-legend {
+    background: #111827;
+    border-color: #1f2937;
+}
+.dark .diagram-lightbox-legend h4 { color: #94a3b8; }
+.dark .diagram-lightbox-legend-text strong { color: #f1f5f9; }
+.dark .diagram-lightbox-legend-text small { color: #94a3b8; }
+.dark .diagram-lightbox-swatch {
+    background: #111827;
+    border-color: #475569;
+}
+.dark .diagram-lightbox-swatch-focal {
+    background: #2e1065;
+    box-shadow: 0 0 8px rgba(167, 139, 250, 0.55);
+}
+.dark .diagram-lightbox-swatch-edge-solid::after,
+.dark .diagram-lightbox-swatch-edge-dashed::after {
+    border-top-color: #94a3b8;
+}
+.dark .diagram-lightbox-swatch-edge-thick::after {
+    border-top-color: #60a5fa;
+}
+
+/* Narrow viewports: stack legend below the stage instead of side-by-side */
+@media (max-width: 900px) {
+    .diagram-lightbox-body { flex-direction: column; }
+    .diagram-lightbox-legend {
+        flex: 0 0 auto;
+        max-height: 30vh;
+    }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    dialog.diagram-lightbox[open] { animation: none; }
+    dialog.diagram-lightbox::backdrop { backdrop-filter: none; }
+    pre.mermaid[data-processed="true"] svg,
+    pre.mermaid[data-processed="true"] svg * {
+        animation: none !important;
+        stroke-dashoffset: 0 !important;
+        stroke-dasharray: none !important;
+    }
+    pre.mermaid:not([data-processed="true"])::before {
+        animation: none !important;
+    }
+}
