@@ -12,7 +12,7 @@
 	"bugs": {
 		"url": "https://github.com/vietgs03/diagram-toolkit/issues"
 	},
-	"keywords": ["mermaid", "astro", "diagram", "system-design", "remark", "bytebytego"],
+	"keywords": ["mermaid", "astro", "diagram", "system-design", "remark"],
 	"type": "module",
 	"files": ["src", "README.md", "DIAGRAM_LAYOUT.md", "LICENSE"],
 	"exports": {

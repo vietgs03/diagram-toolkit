@@ -14,8 +14,8 @@
  *   • caption="..." — rendered as <figcaption>
  *   • id="..."      — becomes the <figure id="...">
  *   • look="..."    — emits data-look="..." on the figure (e.g. "bbg" for
- *                     the ByteByteGo style pack). Orthogonal to Mermaid's
- *                     own `look: handDrawn|neo|classic` frontmatter.
+ *                     the editorial flat look pack). Orthogonal to
+ *                     Mermaid's `look: handDrawn|neo|classic` frontmatter.
  *   • static        — bare flag; disables animations for this diagram
  *
  * Caveat: avoid echoing the literal meta string in prose — inline code
@@ -42,7 +42,7 @@ export interface FenceMeta {
 	 * author sets inside the fence body via `---\nconfig:\n  look: …`).
 	 *
 	 * Current values:
-	 *   • "bbg" — ByteByteGo editorial: flat nodes, dashed clusters, no anim.
+	 *   • "bbg" — editorial flat: flat nodes, dashed clusters, thin edges.
 	 */
 	look?: string;
 }

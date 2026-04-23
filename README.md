@@ -19,8 +19,9 @@ neutral library.
   etc.; a remark plugin binds each token to a colored border at build
   time. No `classDef` boilerplate in your markdown.
 - **BBG look pack** — fence meta `{look="bbg"}` switches to flat white
-  nodes, dashed cluster pills, thin neutral edges — the editorial style
-  most readers associate with ByteByteGo.
+  nodes, dashed cluster pills, thin neutral edges, colored cluster
+  title pills — an editorial style aimed at reference-architecture
+  diagrams.
 - **Icon inlining** — write `{iconify:logos:postgresql}` inside a label;
   the plugin extracts the SVG to `public/icons/…svg` at build and emits
   an `<img>` with pinned dimensions so Mermaid measures labels

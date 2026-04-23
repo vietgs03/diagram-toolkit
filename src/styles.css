@@ -155,7 +155,7 @@ figure.diagram-figure > figcaption.diagram-caption,
  * BBG look pack — opt-in via fence meta `{look="bbg"}`. Emits
  * `data-look="bbg"` on the figure wrapper (see remarkDiagramFigure).
  *
- * Goal: ByteByteGo editorial style — flat white nodes, thin neutral
+ * Goal: editorial flat style — flat white nodes, thin neutral
  * borders, dashed clusters with colored title pills, crisp thin
  * arrows, soft cream figure background. NO drop shadows (the
  * reference look is layered + flat, not floating).
@@ -678,7 +678,12 @@ figure.diagram-figure[data-no-lightbox] {
     cursor: default;
 }
 
-dialog.diagram-lightbox {
+/* `[open]` qualifier is load-bearing: the browser's UA stylesheet sets
+   `display: none` on a closed <dialog>. If we write `display: flex`
+   unconditionally, we override that hide — the dialog stays in the
+   layout, overlays the page content, and the user sees a ghost panel
+   after pressing close. Apply layout + visible chrome only when open. */
+dialog.diagram-lightbox[open] {
     width: min(96vw, 1500px);
     height: 94vh;
     max-width: 96vw;
@@ -694,6 +699,7 @@ dialog.diagram-lightbox {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    animation: diagram-lightbox-enter 180ms ease-out;
 }
 .diagram-lightbox-body {
     flex: 1 1 auto;
@@ -711,9 +717,6 @@ dialog.diagram-lightbox {
 dialog.diagram-lightbox::backdrop {
     background: rgba(15, 23, 42, 0.55);
     backdrop-filter: blur(4px);
-}
-dialog.diagram-lightbox[open] {
-    animation: diagram-lightbox-enter 180ms ease-out;
 }
 @keyframes diagram-lightbox-enter {
     from { opacity: 0; transform: scale(0.96); }
