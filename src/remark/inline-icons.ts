@@ -79,7 +79,11 @@ export const remarkInlineIcons: Plugin<[InlineIconsOptions?], Root> = (
 		iconName: string,
 		packName: string,
 	): Promise<string | null> => {
-		const icon = pack.icons[iconName];
+		// Own-property check so `{iconify:mdi:constructor}` or other built-in
+		// prototype property names don't resolve to Object.prototype values.
+		const icon = Object.hasOwn(pack.icons, iconName)
+			? pack.icons[iconName]
+			: undefined;
 		if (!icon) return null;
 		const filename = `${packName}-${iconName}.svg`;
 		if (writtenFiles.has(filename)) return `${urlBase}/${filename}`;

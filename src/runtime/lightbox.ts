@@ -187,15 +187,29 @@ function uniquifyIds(svg: SVGElement, salt: string): void {
 		"stroke",
 		"href",
 	];
+	// Shared rewrite used for attributes, inline style= strings, and the
+	// embedded <style> CSS text. Done once so a single idMap pass handles
+	// every surface that can reference a def id.
+	const rewriteRefs = (value: string): string => {
+		let next = value;
+		for (const [oldId, newId] of idMap) {
+			next = next.split(`#${oldId}`).join(`#${newId}`);
+		}
+		return next;
+	};
 	svg.querySelectorAll<Element>("*").forEach((el) => {
 		for (const attr of refAttrs) {
 			const val = el.getAttribute(attr);
 			if (!val || !val.includes("#")) continue;
-			let next = val;
-			for (const [oldId, newId] of idMap) {
-				next = next.split(`#${oldId}`).join(`#${newId}`);
-			}
+			const next = rewriteRefs(val);
 			if (next !== val) el.setAttribute(attr, next);
+		}
+		// Inline style="…" can carry url(#id) references (clip-path, filter,
+		// fill, etc.) that the named-attribute loop above misses.
+		const style = el.getAttribute("style");
+		if (style?.includes("#")) {
+			const next = rewriteRefs(style);
+			if (next !== style) el.setAttribute("style", next);
 		}
 		const xlink = el.getAttributeNS("http://www.w3.org/1999/xlink", "href");
 		if (xlink && xlink.startsWith("#")) {
@@ -209,12 +223,10 @@ function uniquifyIds(svg: SVGElement, salt: string): void {
 		}
 	});
 	svg.querySelectorAll<SVGStyleElement>("style").forEach((styleEl) => {
-		let css = styleEl.textContent ?? "";
+		const css = styleEl.textContent ?? "";
 		if (!css) return;
-		for (const [oldId, newId] of idMap) {
-			css = css.split(`#${oldId}`).join(`#${newId}`);
-		}
-		styleEl.textContent = css;
+		const next = rewriteRefs(css);
+		if (next !== css) styleEl.textContent = next;
 	});
 }
 

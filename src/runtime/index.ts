@@ -92,11 +92,26 @@ function kickMermaid(): void {
 	initLightbox();
 }
 
+// Debounce across Swup hooks — both `content:replace` and `page:view` fire
+// on a single soft-nav and each previously called kickMermaid, which
+// cleared data-processed twice and could race the FOUC guard into the
+// 3s deadline. Coalesce to one call per frame.
+let kickQueued = false;
+function scheduleKickMermaid(): void {
+	if (kickQueued) return;
+	kickQueued = true;
+	requestAnimationFrame(() => {
+		kickQueued = false;
+		kickMermaid();
+	});
+}
+
 function wireSwupBridge(): void {
 	const w = window as unknown as SwupHookHost;
 	if (w.swup?.hooks) {
-		w.swup.hooks.on("page:view", kickMermaid);
-		w.swup.hooks.on("content:replace", kickMermaid);
+		// One hook is enough; content:replace fires after the new DOM is in
+		// place, which is the correct moment to kick Mermaid.
+		w.swup.hooks.on("content:replace", scheduleKickMermaid);
 	} else {
 		document.addEventListener("swup:enable", wireSwupBridge, { once: true });
 	}
