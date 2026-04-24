@@ -10,6 +10,27 @@
  * for consumers that only want the CSS.
  * ============================================================= */
 
+/* ---------- Mermaid scratch containment ----------
+ * Mermaid v11 with htmlLabels measures label dimensions by briefly
+ * appending fragment DOM (foreignObject, .nodeLabel, .edgeLabel, etc.)
+ * directly under <body>. If a consuming page doesn't have an FOUC guard
+ * those fragments flash visible at the viewport's top-left for up to a
+ * second before Mermaid moves them into the final SVG. Force any such
+ * direct body children off-screen so they never render in-viewport. */
+body > foreignObject,
+body > .nodeLabel,
+body > .edgeLabel,
+body > .label-container,
+body > .cluster-label,
+body > .labelBkg,
+body > svg.mermaidTooltip,
+body > .mermaid-tooltip {
+    position: fixed !important;
+    left: -99999px !important;
+    top: -99999px !important;
+    pointer-events: none !important;
+}
+
 /* ---------- Layout stability ---------- */
 pre.mermaid {
     min-height: 12rem;               /* reserve vertical space → no layout shift */
