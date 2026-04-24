@@ -823,6 +823,31 @@ dialog.diagram-lightbox::backdrop {
     font-variant-numeric: tabular-nums;
     color: #0f172a;
 }
+.diagram-lightbox-action {
+    padding: 0 0.85rem !important;
+    font-weight: 500 !important;
+    font-size: 0.78rem !important;
+}
+.diagram-lightbox-action.is-success {
+    background: #dcfce7 !important;
+    border-color: #16a34a !important;
+    color: #14532d !important;
+}
+.diagram-lightbox-action.is-error {
+    background: #fee2e2 !important;
+    border-color: #dc2626 !important;
+    color: #7f1d1d !important;
+}
+.dark .diagram-lightbox-action.is-success {
+    background: #14532d !important;
+    border-color: #16a34a !important;
+    color: #d1fae5 !important;
+}
+.dark .diagram-lightbox-action.is-error {
+    background: #7f1d1d !important;
+    border-color: #dc2626 !important;
+    color: #fee2e2 !important;
+}
 .diagram-lightbox-hint {
     margin-left: auto;
     color: #94a3b8;

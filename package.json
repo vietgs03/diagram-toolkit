@@ -1,6 +1,6 @@
 {
 	"name": "@viethx/diagram-toolkit",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"description": "Opinionated Mermaid upgrade — BBG-style component taxonomy, build-time icon inlining, semantic motion, click-to-expand lightbox with zoom + auto-generated legend, and a rule validator.",
 	"license": "MIT",
 	"author": "viethx",

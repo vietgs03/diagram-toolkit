@@ -230,6 +230,67 @@ function uniquifyIds(svg: SVGElement, salt: string): void {
 	});
 }
 
+// ---- Share actions ------------------------------------------------------
+
+/**
+ * Serialize an SVG element to a standalone document string — suitable for
+ * pasting into Figma, another editor, or saving as a `.svg` file. The
+ * cloned SVG already carries the Mermaid-generated `<style>` block and
+ * the toolkit's uniquified ids, so the result renders standalone.
+ */
+function serializeSvg(svg: SVGSVGElement): string {
+	const clone = svg.cloneNode(true) as SVGSVGElement;
+	// Ensure the root has an xmlns so a standalone .svg file renders in any
+	// context (browsers, design tools). Clones from innerHTML can omit it.
+	if (!clone.getAttribute("xmlns")) {
+		clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+	}
+	// Strip UI-only attributes we added during lightbox mount.
+	clone.style.transform = "";
+	clone.style.width = "";
+	clone.style.height = "";
+	const serializer = new XMLSerializer();
+	const xml = serializer.serializeToString(clone);
+	return `<?xml version="1.0" encoding="UTF-8"?>\n${xml}`;
+}
+
+function flashButton(btn: HTMLElement, ok: boolean): void {
+	const prev = btn.textContent ?? "";
+	btn.textContent = ok ? "✓ Copied" : "✗ Failed";
+	btn.classList.toggle("is-success", ok);
+	btn.classList.toggle("is-error", !ok);
+	setTimeout(() => {
+		btn.textContent = prev;
+		btn.classList.remove("is-success", "is-error");
+	}, 1500);
+}
+
+async function copyToClipboard(text: string, btn: HTMLElement): Promise<void> {
+	try {
+		await navigator.clipboard.writeText(text);
+		flashButton(btn, true);
+	} catch {
+		flashButton(btn, false);
+	}
+}
+
+function downloadSvg(text: string, btn: HTMLElement): void {
+	try {
+		const blob = new Blob([text], { type: "image/svg+xml" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = "diagram.svg";
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		URL.revokeObjectURL(url);
+		flashButton(btn, true);
+	} catch {
+		flashButton(btn, false);
+	}
+}
+
 // ---- Dialog construction -----------------------------------------------
 
 function ensureDialog(): HTMLDialogElement {
@@ -247,6 +308,8 @@ function ensureDialog(): HTMLDialogElement {
 					<button type="button" data-zoom="reset" aria-label="Reset zoom" class="diagram-lightbox-zoom-label">100%</button>
 					<button type="button" data-zoom="in" aria-label="Zoom in">+</button>
 					<button type="button" data-zoom="fit" aria-label="Fit to view">⊡</button>
+					<button type="button" data-action="copy-svg" aria-label="Copy SVG to clipboard" class="diagram-lightbox-action">Copy SVG</button>
+					<button type="button" data-action="download-svg" aria-label="Download SVG" class="diagram-lightbox-action">Download</button>
 					<span class="diagram-lightbox-hint">drag to pan · wheel to zoom · +/−/0</span>
 				</div>
 				<div class="diagram-lightbox-stage"></div>
@@ -280,14 +343,24 @@ function ensureDialog(): HTMLDialogElement {
 
 	d.addEventListener("click", (e) => {
 		const t = e.target as HTMLElement;
-		const action = t.closest("[data-zoom]")?.getAttribute("data-zoom");
-		if (!action) return;
-		const svg = getSvg();
-		if (!svg) return;
-		if (action === "in") setScale(svg, zoomLabel, zoom.scale * 1.2);
-		else if (action === "out") setScale(svg, zoomLabel, zoom.scale / 1.2);
-		else if (action === "reset") resetZoom(svg, zoomLabel);
-		else if (action === "fit") resetZoom(svg, zoomLabel);
+		const zoomAction = t.closest("[data-zoom]")?.getAttribute("data-zoom");
+		if (zoomAction) {
+			const svg = getSvg();
+			if (!svg) return;
+			if (zoomAction === "in") setScale(svg, zoomLabel, zoom.scale * 1.2);
+			else if (zoomAction === "out") setScale(svg, zoomLabel, zoom.scale / 1.2);
+			else if (zoomAction === "reset") resetZoom(svg, zoomLabel);
+			else if (zoomAction === "fit") resetZoom(svg, zoomLabel);
+			return;
+		}
+		const shareAction = t.closest("[data-action]")?.getAttribute("data-action");
+		if (shareAction === "copy-svg" || shareAction === "download-svg") {
+			const svg = getSvg();
+			if (!svg) return;
+			const svgString = serializeSvg(svg);
+			if (shareAction === "copy-svg") copyToClipboard(svgString, t);
+			else downloadSvg(svgString, t);
+		}
 	});
 
 	// Wheel to zoom (ctrl-wheel is the "zoom" gesture on mac trackpads;
