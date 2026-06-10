@@ -16,7 +16,17 @@
  * directly under <body>. If a consuming page doesn't have an FOUC guard
  * those fragments flash visible at the viewport's top-left for up to a
  * second before Mermaid moves them into the final SVG. Force any such
- * direct body children off-screen so they never render in-viewport. */
+ * direct body children off-screen so they never render in-viewport.
+ *
+ * IMPORTANT: mermaid.render(id, ...) also appends a TEMP WRAPPER
+ * <div id="d<id>"> (e.g. #dmermaid-abc123) to <body> holding the whole
+ * scratch SVG — node icons (<img class="diagram-node-icon">), cluster
+ * labels and edge labels all live INSIDE that div, so the direct-child
+ * selectors above never matched them. That was the top-left icon flash
+ * on slow loads. Pin the wrapper itself off-screen too.
+ * (visibility/display tricks are unsafe: Mermaid reads getBBox() from
+ * these nodes, which throws if the element is out of the render tree.) */
+body > div[id^="dmermaid-"],
 body > foreignObject,
 body > .nodeLabel,
 body > .edgeLabel,
