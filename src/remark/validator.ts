@@ -17,15 +17,22 @@
  *
  * Rules enforced (see DIAGRAM_LAYOUT.md for rationale):
  *
- *   R4   node count ≤ 12
+ *   R4   node count ≤ 12 (per-fence override: `maxNodes=N` in meta)
  *   R6.1 each `<span class="sub">…</span>` subtitle ≤ 15 chars
+ *   R7   flowcharts with ≥ 4 edges must label at least one edge
  *   R9   at most one `:::highlight`
+ *   R10  `sequenceDiagram` must use `autonumber`
  *   R11  `look="bbg"` fences must have both `title=` and `caption=`
  *   R13  ban `[(cylinder)]` and `([stadium])` shape tokens
+ *   R14  flowcharts must carry a palette (classDef, :::role token, or BBG)
+ *
+ * Per-fence escape hatches (meta attributes):
+ *   • `maxNodes=20` — raise the R4 ceiling for a justified comparison grid
+ *   • `novalidate`  — skip every check (use sparingly; say why in prose)
  *
  * Rules NOT enforced (judgment-dependent, not string-detectable):
- *   R1 (axis), R2 (tier count), R3 (replica collapse), R7 (edge semantics),
- *   R8 (crossings), R10 (ordering), R12 (motion budget).
+ *   R1 (axis), R2 (tier count), R3 (replica collapse), R8 (crossings),
+ *   R12 (motion budget).
  */
 
 import type { Code, Root } from "mdast";
@@ -40,6 +47,9 @@ export interface ValidatorOptions {
 	maxNodes?: number;
 	/** Override the R6.1 ceiling for subtitles. Default: 15. */
 	maxSubtitleChars?: number;
+	/** R7 trigger: flowcharts with at least this many unlabeled directed
+	 *  edges (and zero labeled ones) are flagged. Default: 4. */
+	minEdgesForLabels?: number;
 }
 
 interface Violation {
@@ -90,6 +100,47 @@ function forbiddenShapes(body: string): string[] {
 	return found;
 }
 
+/** Diagram kind from the first directive line. */
+function diagramKind(body: string): string {
+	const m = body.match(
+		/^\s*(flowchart|graph|sequenceDiagram|stateDiagram-v2|stateDiagram|classDiagram|erDiagram|gantt|pie|architecture-beta|timeline|mindmap)\b/m,
+	);
+	return m ? m[1] : "unknown";
+}
+
+const isFlowchart = (kind: string): boolean =>
+	kind === "flowchart" || kind === "graph";
+
+/** R7: count labeled vs unlabeled directed edges in a flowchart.
+ *  `A --> B` is unlabeled; `A -->|"text"| B` and `A -- text --> B` are
+ *  labeled. Undirected ties (`---`) are structural and don't count. */
+function edgeLabelStats(body: string): { labeled: number; unlabeled: number } {
+	let labeled = 0;
+	let unlabeled = 0;
+	for (const line of body.split(/\r?\n/)) {
+		if (/^\s*(?:%%|classDef|class\b|click|linkStyle|style|subgraph|direction)/.test(line)) continue;
+		// labeled: -->|...|  or  ==>|...|  or  -.->|...|  or  -- text -->
+		labeled += (line.match(/[-=.]+>\s*\|/g) || []).length;
+		labeled += (line.match(/--\s+[^->|]+\s+-->/g) || []).length;
+		// total directed arrows minus the labeled ones = unlabeled
+		const arrows = (line.match(/[-=.]+>/g) || []).length;
+		const labeledHere =
+			(line.match(/[-=.]+>\s*\|/g) || []).length +
+			(line.match(/--\s+[^->|]+\s+-->/g) || []).length;
+		unlabeled += Math.max(0, arrows - labeledHere);
+	}
+	return { labeled, unlabeled };
+}
+
+/** R14: a flowchart with no classDef, no :::role token, and no BBG look
+ *  renders in Mermaid's default theme — visually off-palette. */
+function hasPalette(body: string, isBbg: boolean): boolean {
+	if (isBbg) return true;
+	if (/classDef\s+\w+/.test(body)) return true;
+	if (/:::\s*[\w-]+/.test(body)) return true;
+	return false;
+}
+
 // ---- Plugin ------------------------------------------------------------
 
 function validate(
@@ -100,12 +151,20 @@ function validate(
 	const body = node.value;
 	const meta = node.meta ?? "";
 	const isBbg = /look\s*[:=]\s*"bbg"/i.test(meta);
+	const kind = diagramKind(body);
+
+	// Escape hatch: `novalidate` in meta skips every check.
+	if (/\bnovalidate\b/i.test(meta)) return v;
+
+	// Per-fence R4 ceiling override: `maxNodes=20`.
+	const metaMax = meta.match(/maxNodes\s*[:=]\s*"?(\d+)"?/i);
+	const maxNodes = metaMax ? Number(metaMax[1]) : opts.maxNodes;
 
 	const nodes = countNodes(body);
-	if (nodes > opts.maxNodes)
+	if (nodes > maxNodes)
 		v.push({
 			rule: "R4",
-			text: `diagram has ${nodes} nodes, ceiling is ${opts.maxNodes}. Split into two diagrams.`,
+			text: `diagram has ${nodes} nodes, ceiling is ${maxNodes}. Split into two diagrams (or annotate the fence with maxNodes=${nodes} and justify in prose).`,
 		});
 
 	const longs = longSubtitles(body, opts.maxSubtitleChars);
@@ -115,11 +174,28 @@ function validate(
 			text: `subtitle ${s.length} chars > ${opts.maxSubtitleChars}: “${s}”. Shorten or move to caption.`,
 		});
 
+	// R7: a flowchart whose edges are all unlabeled is not self-documenting.
+	if (isFlowchart(kind)) {
+		const { labeled, unlabeled } = edgeLabelStats(body);
+		if (unlabeled >= opts.minEdgesForLabels && labeled === 0)
+			v.push({
+				rule: "R7",
+				text: `${unlabeled} directed edges, none labeled. Label at least the cross-tier edges (A -->|"sync write"| B).`,
+			});
+	}
+
 	const focals = highlightCount(body);
 	if (focals > 1)
 		v.push({
 			rule: "R9",
 			text: `${focals} :::highlight nodes — diagrams have exactly one focal. Split if you need two.`,
+		});
+
+	// R10: sequence diagrams must number their messages.
+	if (kind === "sequenceDiagram" && !/^\s*autonumber\b/m.test(body))
+		v.push({
+			rule: "R10",
+			text: `sequenceDiagram without autonumber. Add it on the line after the directive.`,
 		});
 
 	if (isBbg) {
@@ -142,6 +218,13 @@ function validate(
 			text: `${s} shape used. Use a rectangle [...] and :::<role> classDef instead.`,
 		});
 
+	// R14: flowcharts must opt into the palette, one way or another.
+	if (isFlowchart(kind) && !hasPalette(body, isBbg))
+		v.push({
+			rule: "R14",
+			text: `flowchart carries no classDef / :::role token / BBG look — it will render in Mermaid's default theme, off the blog palette.`,
+		});
+
 	return v;
 }
 
@@ -152,6 +235,7 @@ export const remarkDiagramValidator: Plugin<[ValidatorOptions?], Root> = (
 		strict: raw.strict ?? false,
 		maxNodes: raw.maxNodes ?? 12,
 		maxSubtitleChars: raw.maxSubtitleChars ?? 15,
+		minEdgesForLabels: raw.minEdgesForLabels ?? 4,
 	};
 
 	return (tree, file: VFile) => {

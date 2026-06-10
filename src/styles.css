@@ -331,6 +331,18 @@ figure.diagram-figure[data-look="bbg"] > .diagram-title + pre.mermaid {
     stroke-dasharray: 4 3 !important;
 }
 
+/* ---- State tokens (decision trees / pipelines / before-after) ----
+ * Same flat-white card; the border color carries the verdict. A faint
+ * tinted wash (4% alpha) separates a good path from a failure path without
+ * turning the diagram into a dashboard of saturated fills. */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.ok   rect { stroke: #16a34a !important; stroke-width: 1.75 !important; fill: #f3fbf5 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.warn rect { stroke: #d97706 !important; stroke-width: 1.75 !important; fill: #fffaf0 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.bad  rect { stroke: #dc2626 !important; stroke-width: 1.75 !important; fill: #fef5f5 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.step rect { stroke: #3b6fd6 !important; stroke-width: 1.75 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.ask  rect { stroke: #6366f1 !important; stroke-width: 1.75 !important; }
+/* Diamond / hexagon decision nodes inherit the ask border too */
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg .node.ask  polygon { stroke: #6366f1 !important; stroke-width: 1.75 !important; }
+
 /* ---- Thin neutral edges ---- */
 [data-look="bbg"] pre.mermaid[data-processed="true"] svg .flowchart-link,
 [data-look="bbg"] pre.mermaid[data-processed="true"] svg .edgePath path,
@@ -416,6 +428,11 @@ figure.diagram-figure[data-look="bbg"] > .diagram-title + pre.mermaid {
 [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterGreen .cluster-label foreignObject > div {
     background: #d1fae5;
     color: #065f46;
+}
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterRed rect { stroke: #dc2626 !important; }
+[data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterRed .cluster-label foreignObject > div {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
 /* ---- Node layout (R5): icon-TOP + center-align ----
@@ -672,6 +689,7 @@ figure.diagram-figure[data-look="bbg"] > .diagram-title + pre.mermaid {
 .dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterPurple .cluster-label foreignObject > div { background: #4c1d95; color: #ede9fe; }
 .dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterOrange .cluster-label foreignObject > div { background: #7c2d12; color: #fed7aa; }
 .dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterGreen .cluster-label foreignObject > div  { background: #14532d; color: #d1fae5; }
+.dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg g.cluster.clusterRed .cluster-label foreignObject > div    { background: #7f1d1d; color: #fee2e2; }
 
 /* Bead tint — blue-400 reads well on dark, unlike the light-mode blue-500 */
 .dark [data-look="bbg"] pre.mermaid[data-processed="true"] svg .diagram-flow-dot {

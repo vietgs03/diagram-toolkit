@@ -183,6 +183,15 @@ export const COMPONENTS = {
 	search:        { stroke: "#0ea5e9" },
 	observability: { stroke: "#94a3b8" },
 	external:      { stroke: "#64748b" },
+
+	// State tokens — for decision trees, pipelines, and before/after panels.
+	// Same flat-white-card discipline; the border color carries the verdict
+	// (good path / caution / failure / a neutral pipeline step or question).
+	ok:            { stroke: "#16a34a" },
+	warn:          { stroke: "#d97706" },
+	bad:           { stroke: "#dc2626" },
+	step:          { stroke: "#3b6fd6" },
+	ask:           { stroke: "#6366f1" },
 } as const;
 
 export type ComponentKey = keyof typeof COMPONENTS;
